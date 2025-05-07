@@ -18,7 +18,7 @@ export default function Dashboard() {
                     <div className="aspect-video rounded-xl bg-muted/50" />
                     <div className="aspect-video rounded-xl bg-muted/50" />
                 </div>
-                <div className="min-h-[100vh] h-full flex-1 rounded-xl bg-muted/50" />
+                <div className="min-h-[100vh] h-full flex-1 rounded-xl bg-card" />
             </div>
         </AuthenticatedLayout>
     );
