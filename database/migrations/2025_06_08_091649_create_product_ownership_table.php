@@ -10,7 +10,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create("product_ownership", function (Blueprint $table) {
+        Schema::create("product_ownerships", function (Blueprint $table) {
             $table->id();
             $table
                 ->foreignId("product_id")
@@ -26,7 +26,7 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        Schema::create("ownership_history", function (Blueprint $table) {
+        Schema::create("ownership_histories", function (Blueprint $table) {
             $table->id();
             $table
                 ->foreignId("product_id")
@@ -53,7 +53,7 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists("product_ownership");
-        Schema::dropIfExists("ownership_history");
+        Schema::dropIfExists("product_ownerships");
+        Schema::dropIfExists("ownership_histories");
     }
 };

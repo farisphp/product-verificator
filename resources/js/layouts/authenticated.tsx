@@ -19,7 +19,13 @@ import { PropsWithChildren, ReactNode } from "react";
 
 export default function Authenticated({
     children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
+    breadcrumbs,
+}: PropsWithChildren<{
+    header?: ReactNode;
+    breadcrumbs?: { label: string; url?: string }[];
+}>) {
+    // const currentPage = breadcrumbs?.[breadcrumbs.length - 1];
+    // const
     useError();
 
     return (
@@ -36,16 +42,26 @@ export default function Authenticated({
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">
-                                        Building Your Application
+                                    <BreadcrumbLink href={route("dashboard")}>
+                                        Dashboard
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>
-                                        Data Fetching
-                                    </BreadcrumbPage>
-                                </BreadcrumbItem>
+                                {breadcrumbs?.map((breadcrumb, index) => (
+                                    <>
+                                        <BreadcrumbSeparator className="hidden md:block" />
+                                        {index === breadcrumbs.length - 1 ? (
+                                            <BreadcrumbPage>
+                                                {breadcrumb.label}
+                                            </BreadcrumbPage>
+                                        ) : (
+                                            <BreadcrumbLink
+                                                href={breadcrumb.url}
+                                            >
+                                                {breadcrumb.label}
+                                            </BreadcrumbLink>
+                                        )}
+                                    </>
+                                ))}
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>

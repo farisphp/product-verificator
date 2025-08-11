@@ -2,27 +2,63 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProductItemRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Http\Resources\MerchantCollection;
+use App\Http\Resources\ProductCategoryResource;
+use App\Http\Resources\ProductItemResource;
 use App\Models\Product;
+use App\Http\Resources\ProductResource;
+use App\Models\Merchant;
+use App\Models\ProductCategory;
+use App\Models\ProductItem;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render("product/index");
-    }
+        $this->authorize("viewAny", Product::class);
+        $merchantId = null;
+        if (!$request->user()->is_admin) {
+            $merchantId = $request->user()->getLatestMerchant()->id;
+        }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $page = $request->input("page", 1);
+        $per_page = $request->input("per_page", 20);
+
+        return Inertia::render("product/index", [
+            "products" => fn() => ProductResource::collection(
+                Product::orderBy("created_at", "desc")
+                    ->filter($request->only("search"))
+                    ->paginate($per_page, page: $page),
+            ),
+            "categories" => fn() => ProductCategoryResource::collection(
+                ProductCategory::orderBy("created_at", "desc")
+                    ->filter(["search" => $request->input("searchCategory")])
+                    ->when($merchantId, function (Builder $query) use (
+                        $merchantId,
+                    ) {
+                        $query->where("merchant_id", $merchantId);
+                    })
+                    ->limit(10)
+                    ->get(),
+            ),
+            "merchants" => fn() => new MerchantCollection(
+                Merchant::orderBy("created_at")
+                    ->filter(["search" => $request->input("searchMerchant")])
+                    ->limit(5)
+                    ->get(),
+            ),
+        ]);
     }
 
     public function bulkUpload()
@@ -40,23 +76,76 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request)
     {
-        //
+        $this->authorize("create", Product::class);
+        $merchantId = $request->user()->is_admin
+            ? $request->merchant_id
+            : session("team_id", $request->user()->getLatestMerchant()->id);
+
+        // Handle category creation or retrieval
+        $categoryId = is_numeric($request->category)
+            ? $request->category
+            : ProductCategory::create([
+                "name" => $request->category,
+                "merchant_id" => $merchantId,
+            ])->id;
+
+        $product = Product::create([
+            "name" => $request->name,
+            "brand" => $request->brand,
+            "category_id" => $categoryId,
+            "merchant_id" => $merchantId,
+            "material" => $request->material,
+            "description" => $request->description,
+            "colors" => $request->colors ? json_encode($request->colors) : null,
+            "sizes" => $request->sizes ? json_encode($request->sizes) : null,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with("success", "Product created successfully.");
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
-        return Inertia::render("product/detail");
-    }
+        $this->authorize("view", Product::class);
+        $merchantId = null;
+        if (!$request->user()->is_admin) {
+            $merchantId = $request->user()->getLatestMerchant()->id;
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Product $product)
-    {
-        //
+        // Paginate the product items
+        $page = $request->input("page", 1);
+        $perPage = $request->input("per_page", 20);
+
+        return Inertia::render("product/detail", [
+            "product" => $product->toResource(),
+            "items" => fn() => ProductItemResource::collection(
+                $product
+                    ->items()
+                    ->filter($request->only("search"))
+                    ->paginate($perPage, page: $page),
+            ),
+            "categories" => fn() => ProductCategoryResource::collection(
+                ProductCategory::orderBy("created_at", "desc")
+                    ->filter(["search" => $request->input("searchCategory")])
+                    ->when($merchantId, function (Builder $query) use (
+                        $merchantId,
+                    ) {
+                        $query->where("merchant_id", $merchantId);
+                    })
+                    ->limit(10)
+                    ->get(),
+            ),
+            "merchants" => fn() => new MerchantCollection(
+                Merchant::orderBy("created_at")
+                    ->filter(["search" => $request->input("searchMerchant")])
+                    ->limit(5)
+                    ->get(),
+            ),
+        ]);
     }
 
     /**
@@ -64,7 +153,31 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
-        //
+        $this->authorize("update", $product);
+        $merchantId = $request->user()->is_admin
+            ? $request->merchant_id
+            : session("team_id", $request->user()->getLatestMerchant()->id);
+
+        // Handle category creation or retrieval
+        $categoryId = is_numeric($request->category)
+            ? $request->category
+            : ProductCategory::create([
+                "name" => $request->category,
+                "merchant_id" => $merchantId,
+            ])->id;
+
+        $product->update([
+            "name" => $request->name ?? $product->name,
+            "brand" => $request->brand ?? $product->brand,
+            "category_id" => $categoryId,
+            "material" => $request->material ?? $product->material,
+            "description" => $request->description ?? $product->description,
+            "colors" => $request->colors,
+            "sizes" => $request->sizes,
+        ]);
+        return redirect()
+            ->back()
+            ->with("success", "Product updated successfully.");
     }
 
     /**
@@ -72,6 +185,32 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        //
+        $this->authorize("delete", $product);
+        $product->delete();
+
+        return redirect()
+            ->back()
+            ->with("success", "Product deleted successfully.");
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function itemStore(
+        StoreProductItemRequest $request,
+        Product $product,
+    ) {
+        $productItem = ProductItem::create([
+            "product_id" => $product->id,
+            "serial_number" => $request->serial_number,
+            "manufacture_date" => $request->manufacture_date,
+            "sku" => $request->sku,
+            "color" => $request->color,
+            "size" => $request->size,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with("success", "Product created successfully.");
     }
 }

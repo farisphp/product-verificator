@@ -6,6 +6,7 @@ use App\Mail\AdminInvitation;
 use App\Models\Invitation;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class InviteAdminMerchant implements ShouldQueue
@@ -22,16 +23,17 @@ class InviteAdminMerchant implements ShouldQueue
      */
     public function handle(): void
     {
+        Log::debug("invitation: " . json_encode($this->invitation));
         $name = $this->getNameFromEmail($this->invitation->email);
-
         Mail::to($this->invitation->email)->send(
             new AdminInvitation(
                 name: $name,
                 email: $this->invitation->email,
                 setupUrl: route("invitation.show", [
+                    "invitation" => $this->invitation->id,
                     "token" => $this->invitation->token,
-                ])
-            )
+                ]),
+            ),
         );
     }
 

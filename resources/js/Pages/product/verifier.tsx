@@ -32,16 +32,16 @@ const mockProducts = {
         id: "ABC123456",
         name: "Premium Leather Wallet",
         brand: "LuxLeather",
-        manufactureDate: "2023-05-15",
+        manufactureDate: "2025-05-15",
         isAuthentic: true,
         description: "Handcrafted premium leather wallet with RFID protection",
         imageUrl: "/placeholder.svg?height=200&width=300",
         ownershipHistory: [
             {
-                owner: "LuxLeather Manufacturing",
-                date: "2023-05-15",
-                location: "Milan, Italy",
-                type: "Manufactured",
+                owner: "LuxLeather",
+                date: "2025-06-01",
+                location: "Jakarta, Indonesia",
+                type: "Merchant",
             },
             // {
             //     owner: "Global Distribution Inc.",
@@ -57,8 +57,8 @@ const mockProducts = {
             // },
             {
                 owner: "John Doe",
-                date: "2023-08-15",
-                location: "New York, USA",
+                date: "2025-06-03",
+                location: "Surabaya, Indonesia",
                 type: "Consumer",
             },
         ],
@@ -177,7 +177,7 @@ export default function Checker() {
                                         QR Code
                                     </TabsTrigger>
                                     <TabsTrigger value="serial">
-                                        Serial Number
+                                        Product ID
                                     </TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="serial">
@@ -194,8 +194,7 @@ export default function Checker() {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>
-                                                            Product Serial
-                                                            Number
+                                                            Product ID
                                                         </FormLabel>
                                                         <FormControl>
                                                             <Input
@@ -205,7 +204,7 @@ export default function Checker() {
                                                         </FormControl>
                                                         <FormDescription>
                                                             You can find the
-                                                            serial number on the
+                                                            product ID on the
                                                             product label or
                                                             packaging.
                                                         </FormDescription>
@@ -244,27 +243,15 @@ export default function Checker() {
                                                         within the scanner area
                                                     </p>
                                                 </div>
-                                                <Button
-                                                    disabled
-                                                    className="mt-4"
-                                                >
+                                                <Button className="mt-4">
                                                     Upload QR Code
                                                 </Button>
                                             </div>
                                         </div>
-                                        <p className="text-xs text-muted-foreground text-center">
-                                            QR code scanning is coming soon.
-                                            Please use the serial number method
-                                            for now.
-                                        </p>
                                     </div>
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
-                        <CardFooter className="text-sm text-muted-foreground">
-                            For demonstration, try these IDs: ABC123456,
-                            XYZ789012, or FAKE555555
-                        </CardFooter>
                     </Card>
 
                     {product && <ProductDetails product={product} />}

@@ -33,6 +33,7 @@ import {
 } from "./dropdown-menu";
 import { Input } from "./input";
 import { MetaPagination } from "@/types";
+import { debounce } from "lodash";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -43,6 +44,7 @@ interface DataTableProps<TData, TValue> {
     };
     filter?: {
         column: string;
+        onChange: (value: string) => void;
         placeholder?: string;
     };
     RightHeader?: React.ComponentType;
@@ -105,11 +107,13 @@ export function DataTable<TData, TValue>({
                                 .getColumn(filter.column)
                                 ?.getFilterValue() as string) ?? ""
                         }
-                        onChange={(event) =>
+                        onChange={(event) => {
                             table
                                 .getColumn(filter.column)
-                                ?.setFilterValue(event.target.value)
-                        }
+                                ?.setFilterValue(event.target.value);
+
+                            filter?.onChange(event.target.value);
+                        }}
                         className="max-w-sm"
                     />
                 ) : null}

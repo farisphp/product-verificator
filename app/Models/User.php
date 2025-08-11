@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -47,6 +46,13 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function merchants(): BelongsToMany
     {
-        return $this->belongsToMany(Merchant::class);
+        return $this->belongsToMany(Merchant::class)
+            ->withTimestamps()
+            ->withPivot("invited_by", "role");
+    }
+
+    public function getLatestMerchant(): ?Merchant
+    {
+        return $this->merchants()->latest()->first();
     }
 }

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import AuthenticatedLayout from "@/layouts/authenticated";
 import { cn } from "@/lib/utils";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import {
     BarChart3,
     Box,
@@ -18,8 +18,42 @@ import {
     QrCode,
     ShoppingBag,
 } from "lucide-react";
+import {
+    ChartConfig,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 
-export default function Dashboard() {
+const chartData = [
+    { month: "January", verification: 186 },
+    { month: "February", verification: 305 },
+    { month: "March", verification: 237 },
+    { month: "April", verification: 73 },
+    { month: "May", verification: 209 },
+    { month: "June", verification: 214 },
+];
+
+const chartConfig = {
+    verification: {
+        label: "Scan",
+        color: "var(--chart-1)",
+    },
+} satisfies ChartConfig;
+
+export default function Dashboard({
+    total_products,
+    total_claimed,
+    total_scans,
+    total_alerts,
+}: {
+    total_products: number;
+    total_claimed: number;
+    total_scans: number;
+    total_alerts: number;
+}) {
+    const user = usePage().props.auth.user;
     return (
         <AuthenticatedLayout>
             <Head title="Dashboard" />
@@ -29,17 +63,14 @@ export default function Dashboard() {
                     <h1 className="text-3xl font-bold tracking-tight">
                         Dashboard
                     </h1>
-                    <div className={cn("flex items-center gap-2")}>
-                        <Button asChild>
-                            <Link href="/admin/products/bulk-upload">
-                                <FileUp className="mr-2 h-4 w-4" />
-                                Bulk Upload Products
-                            </Link>
-                        </Button>
-                    </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div
+                    className={cn("grid gap-4", {
+                        "md:grid-cols-2 lg:grid-cols-4": user.is_admin,
+                        "md:grid-cols-2 lg:grid-cols-3": !user.is_admin,
+                    })}
+                >
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
@@ -48,7 +79,9 @@ export default function Dashboard() {
                             <Box className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">1,284</div>
+                            <div className="text-2xl font-bold">
+                                {total_products}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                                 +24 from last month
                             </p>
@@ -57,12 +90,14 @@ export default function Dashboard() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
-                                Verifications
+                                Total Claimed Products
                             </CardTitle>
                             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">3,427</div>
+                            <div className="text-2xl font-bold">
+                                {total_claimed}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                                 +19% from last month
                             </p>
@@ -76,43 +111,77 @@ export default function Dashboard() {
                             <QrCode className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">2,842</div>
+                            <div className="text-2xl font-bold">
+                                {total_scans}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                                 +12% from last month
                             </p>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Counterfeit Alerts
-                            </CardTitle>
-                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">12</div>
-                            <p className="text-xs text-muted-foreground">
-                                -4 from last month
-                            </p>
-                        </CardContent>
-                    </Card>
+                    {user.is_admin ? (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">
+                                    Counterfeit Alerts
+                                </CardTitle>
+                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {total_alerts}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    -4 from last month
+                                </p>
+                            </CardContent>
+                        </Card>
+                    ) : null}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                     <Card className="col-span-4">
                         <CardHeader>
-                            <CardTitle>Verification Activity</CardTitle>
+                            <CardTitle>QR Scan Activity</CardTitle>
                             <CardDescription>
-                                Product verification trends over time
+                                QR Scan trends over time
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pl-2">
-                            <div className="h-[200px] flex items-center justify-center bg-muted/20 rounded-md">
-                                <BarChart3 className="h-8 w-8 text-muted" />
-                                <span className="ml-2 text-sm text-muted-foreground">
-                                    Chart visualization will appear here
-                                </span>
-                            </div>
+                            <ChartContainer config={chartConfig}>
+                                <AreaChart
+                                    accessibilityLayer
+                                    data={chartData}
+                                    margin={{
+                                        left: 12,
+                                        right: 12,
+                                    }}
+                                >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="month"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) =>
+                                            value.slice(0, 3)
+                                        }
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={
+                                            <ChartTooltipContent indicator="line" />
+                                        }
+                                    />
+                                    <Area
+                                        dataKey="verification"
+                                        type="natural"
+                                        fill="var(--color-verification)"
+                                        fillOpacity={0.4}
+                                        stroke="var(--color-verification)"
+                                    />
+                                </AreaChart>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
                     <Card className="col-span-3">

@@ -12,36 +12,34 @@ use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class MerchantController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request)
     {
+        if (!$request->user()->is_admin) {
+            return redirect()->route(
+                "merchants.show",
+                $request->user()->getLatestMerchant()->id,
+            );
+        }
+
         $page = request()->input("page", 1);
         $per_page = request()->input("per_page", 20);
 
         return Inertia::render("merchant/index", [
             "merchants" => new MerchantCollection(
                 Merchant::orderBy("created_at")
-                    ->filter(Request::only("search"))
-                    ->paginate($per_page, page: $page)
+                    ->filter($request->only("search"))
+                    ->paginate($per_page, page: $page),
             ),
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -58,7 +56,7 @@ class MerchantController extends Controller
 
             $adminExist = User::where(
                 "email",
-                $validated["admin_email"]
+                $validated["admin_email"],
             )->first();
 
             if ($adminExist) {
@@ -68,7 +66,7 @@ class MerchantController extends Controller
                     ->back()
                     ->with(
                         "success",
-                        "Merchant created successfully. Admin invitation has been sent."
+                        "Merchant created successfully. Admin invitation has been sent.",
                     );
             }
 
@@ -79,10 +77,10 @@ class MerchantController extends Controller
                     $merchant->id .
                         $validated["admin_email"] .
                         time() .
-                        uniqid()
+                        uniqid(),
                 ),
                 0,
-                20
+                20,
             );
 
             // Create invitation record
@@ -95,6 +93,8 @@ class MerchantController extends Controller
 
             DB::commit();
 
+            Log::debug("invitation: " . json_encode($invitation));
+
             // Dispatch job to send invitation email
             dispatch(new \App\Jobs\InviteAdminMerchant($invitation));
 
@@ -102,7 +102,7 @@ class MerchantController extends Controller
                 ->back()
                 ->with(
                     "success",
-                    "Merchant created successfully. Admin invitation has been sent."
+                    "Merchant created successfully. Admin invitation has been sent.",
                 );
         } catch (Exception $error) {
             DB::rollBack();
@@ -118,7 +118,17 @@ class MerchantController extends Controller
      */
     public function show(Merchant $merchant)
     {
-        //
+        $page = request()->input("page", 1);
+        $per_page = request()->input("per_page", 20);
+        $users = $merchant
+            ->users()
+            ->orderBy("created_at", "desc")
+            ->paginate($per_page, page: $page);
+
+        return Inertia::render("merchant/detail", [
+            "merchant" => $merchant,
+            "users" => $users,
+        ]);
     }
 
     /**

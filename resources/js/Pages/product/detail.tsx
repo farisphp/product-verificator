@@ -1,3 +1,7 @@
+import { Head, Link, router } from "@inertiajs/react";
+import { FileUp, Plus } from "lucide-react";
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,246 +11,58 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Authenticated from "@/layouts/authenticated";
-import { Head, Link } from "@inertiajs/react";
+import { debounce } from "lodash";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 
 import {
-    ArrowUpDown,
-    CheckCircle2,
-    Download,
-    FileUp,
-    MoreHorizontal,
-    Plus,
-    QrCode,
-    Search,
-    XCircle,
-} from "lucide-react";
-import { useState } from "react";
+    ChartConfig,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart";
+import { DataTable } from "@/components/ui/data-table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { PaginatedData, Product } from "@/types";
+import { itemColumns } from "./partials/columns";
+import { ProductForm } from "./partials/product-form";
 
-// Mock data for individual product items
-const getMockProductItems = (productName: string) => {
-    // Generate different mock data based on product name
-    const baseItems = [
-        {
-            id: "ABC123456",
-            serialNumber: "SN-2023-001",
-            manufactureDate: "2023-05-15",
-            status: "active",
-            location: "New York, USA",
-            lastVerified: "2023-09-10",
-            owner: "John Doe",
-        },
-        {
-            id: "ABC123457",
-            serialNumber: "SN-2023-002",
-            manufactureDate: "2023-05-16",
-            status: "active",
-            location: "Los Angeles, USA",
-            lastVerified: "2023-09-12",
-            owner: "Jane Smith",
-        },
-        {
-            id: "ABC123458",
-            serialNumber: "SN-2023-003",
-            manufactureDate: "2023-05-17",
-            status: "active",
-            location: "Chicago, USA",
-            lastVerified: "2023-09-15",
-            owner: "Robert Johnson",
-        },
-        {
-            id: "ABC123459",
-            serialNumber: "SN-2023-004",
-            manufactureDate: "2023-05-18",
-            status: "inactive",
-            location: "Miami, USA",
-            lastVerified: "2023-08-20",
-            owner: "Emily Davis",
-        },
-        {
-            id: "ABC123460",
-            serialNumber: "SN-2023-005",
-            manufactureDate: "2023-05-19",
-            status: "active",
-            location: "Seattle, USA",
-            lastVerified: "2023-09-05",
-            owner: "Michael Wilson",
-        },
-    ];
+const chartData = [
+    { month: "January", verification: 10 },
+    { month: "February", verification: 34 },
+    { month: "March", verification: 2 },
+    { month: "April", verification: 25 },
+    { month: "May", verification: 15 },
+    { month: "June", verification: 40 },
+];
 
-    // Add more items for specific product names to demonstrate variety
-    if (productName === "Premium Leather Wallet") {
-        return [
-            ...baseItems,
-            {
-                id: "ABC123461",
-                serialNumber: "SN-2023-006",
-                manufactureDate: "2023-05-20",
-                status: "active",
-                location: "Boston, USA",
-                lastVerified: "2023-09-18",
-                owner: "Sarah Brown",
-            },
-            {
-                id: "ABC123462",
-                serialNumber: "SN-2023-007",
-                manufactureDate: "2023-05-21",
-                status: "active",
-                location: "Dallas, USA",
-                lastVerified: "2023-09-20",
-                owner: "David Miller",
-            },
-        ];
-    }
-
-    if (productName === "Designer Sunglasses") {
-        return [
-            ...baseItems.slice(0, 3),
-            {
-                id: "XYZ789012",
-                serialNumber: "SN-2023-101",
-                manufactureDate: "2023-04-10",
-                status: "active",
-                location: "Paris, France",
-                lastVerified: "2023-09-01",
-                owner: "Sophie Martin",
-            },
-            {
-                id: "XYZ789013",
-                serialNumber: "SN-2023-102",
-                manufactureDate: "2023-04-11",
-                status: "active",
-                location: "London, UK",
-                lastVerified: "2023-09-03",
-                owner: "James Wilson",
-            },
-        ];
-    }
-
-    return baseItems;
-};
-
-// Mock product details
-const getMockProductDetails = (productName: string) => {
-    const productDetails = {
-        "Premium Leather Wallet": {
-            brand: "LuxLeather",
-            category: "Accessories",
-            description:
-                "Handcrafted premium leather wallet with RFID protection",
-            material: "Full-grain leather",
-            dimensions: "4.5 x 3.5 x 0.5 inches",
-            colors: ["Black", "Brown", "Tan"],
-            price: "$89.99",
-        },
-        "Designer Sunglasses": {
-            brand: "OptiVision",
-            category: "Eyewear",
-            description: "Polarized designer sunglasses with UV protection",
-            material: "Acetate frame, polarized lenses",
-            dimensions: "Standard size",
-            colors: ["Black", "Tortoise", "Blue"],
-            price: "$129.99",
-        },
-        "Luxury Watch": {
-            brand: "TimeKeeper",
-            category: "Watches",
-            description:
-                "Precision crafted luxury watch with automatic movement",
-            material: "Stainless steel, sapphire crystal",
-            dimensions: "42mm case diameter",
-            colors: ["Silver", "Gold", "Rose Gold"],
-            price: "$499.99",
-        },
-        "Designer Handbag": {
-            brand: "FashionElite",
-            category: "Bags",
-            description: "Elegant designer handbag with premium materials",
-            material: "Italian leather, metal hardware",
-            dimensions: "12 x 9 x 4 inches",
-            colors: ["Black", "Red", "Beige"],
-            price: "$349.99",
-        },
-        "Premium Sneakers": {
-            brand: "UrbanStep",
-            category: "Footwear",
-            description: "Comfortable and stylish premium sneakers",
-            material: "Leather upper, rubber sole",
-            dimensions: "Available in sizes 7-13",
-            colors: ["White", "Black", "Gray"],
-            price: "$149.99",
-        },
-    };
-
-    return (
-        productDetails[productName as keyof typeof productDetails] || {
-            brand: "Unknown",
-            category: "Miscellaneous",
-            description: "No description available",
-            material: "Unknown",
-            dimensions: "Not specified",
-            colors: [],
-            price: "Not specified",
-        }
-    );
-};
+const chartConfig = {
+    verification: {
+        label: "Scan",
+        color: "var(--chart-1)",
+    },
+} satisfies ChartConfig;
 
 export default function ProductDetail({
-    productName = "Premium Leather Wallet",
+    product,
+    items,
 }: {
-    productName: string;
+    product: { data: Product };
+    items: PaginatedData<any>;
 }) {
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState("items");
-
-    const productItems = getMockProductItems(productName);
-    const productDetails = getMockProductDetails(productName);
-
-    const toggleItem = (itemId: string) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId)
-                ? prev.filter((id) => id !== itemId)
-                : [...prev, itemId],
-        );
-    };
-
-    const toggleAll = () => {
-        setSelectedItems((prev) =>
-            prev.length === productItems.length
-                ? []
-                : productItems.map((item) => item.id),
-        );
-    };
-
-    const filteredItems = productItems.filter(
-        (item) =>
-            item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.serialNumber
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
-            item.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.location.toLowerCase().includes(searchQuery.toLowerCase()),
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(
+        null,
     );
+
     return (
         <Authenticated>
             <Head title="Detail" />
@@ -258,7 +74,7 @@ export default function ProductDetail({
                 </TabsList>
 
                 <TabsContent value="items" className="space-y-4 pt-4">
-                    <div className="flex items-center justify-between">
+                    {/*<div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -275,7 +91,9 @@ export default function ProductDetail({
                         <div className="flex items-center gap-2">
                             <Button asChild variant="outline">
                                 <Link
-                                    href={`/admin/products/${encodeURIComponent(productName)}/add-item`}
+                                    href={route("products.items.store", {
+                                        product: product.data.id,
+                                    })}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     Add Item
@@ -283,162 +101,16 @@ export default function ProductDetail({
                             </Button>
                             <Button asChild>
                                 <Link
-                                    href={`/admin/products/${encodeURIComponent(productName)}/bulk-upload`}
+                                    href={`/admin/products/${encodeURIComponent(product.data.id)}/bulk-upload`}
                                 >
                                     <FileUp className="mr-2 h-4 w-4" />
                                     Bulk Upload Items
                                 </Link>
                             </Button>
                         </div>
-                    </div>
+                    </div>*/}
 
-                    <Card>
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[50px]">
-                                            <Checkbox
-                                                checked={
-                                                    selectedItems.length ===
-                                                        productItems.length &&
-                                                    productItems.length > 0
-                                                }
-                                                onCheckedChange={toggleAll}
-                                                aria-label="Select all items"
-                                            />
-                                        </TableHead>
-                                        <TableHead className="w-[150px]">
-                                            <div className="flex items-center space-x-1">
-                                                <span>Product ID</span>
-                                                <ArrowUpDown className="h-3 w-3" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead>
-                                            <div className="flex items-center space-x-1">
-                                                <span>Serial Number</span>
-                                                <ArrowUpDown className="h-3 w-3" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead>
-                                            <div className="flex items-center space-x-1">
-                                                <span>Manufacture Date</span>
-                                                <ArrowUpDown className="h-3 w-3" />
-                                            </div>
-                                        </TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>Last Verified</TableHead>
-                                        <TableHead>Current Owner</TableHead>
-                                        <TableHead className="w-[80px]">
-                                            Actions
-                                        </TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredItems.map((item) => (
-                                        <TableRow key={item.id}>
-                                            <TableCell>
-                                                <Checkbox
-                                                    checked={selectedItems.includes(
-                                                        item.id,
-                                                    )}
-                                                    onCheckedChange={() =>
-                                                        toggleItem(item.id)
-                                                    }
-                                                    aria-label={`Select item ${item.id}`}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="font-medium">
-                                                {item.id}
-                                            </TableCell>
-                                            <TableCell>
-                                                {item.serialNumber}
-                                            </TableCell>
-                                            <TableCell>
-                                                {item.manufactureDate}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    variant={
-                                                        item.status === "active"
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                    className={
-                                                        item.status === "active"
-                                                            ? "bg-green-100 text-green-800"
-                                                            : ""
-                                                    }
-                                                >
-                                                    {item.status === "active"
-                                                        ? "Active"
-                                                        : "Inactive"}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {item.location}
-                                            </TableCell>
-                                            <TableCell>
-                                                {item.lastVerified}
-                                            </TableCell>
-                                            <TableCell>{item.owner}</TableCell>
-                                            <TableCell>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger
-                                                        asChild
-                                                    >
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                        >
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">
-                                                                Open menu
-                                                            </span>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>
-                                                            Actions
-                                                        </DropdownMenuLabel>
-                                                        <DropdownMenuItem>
-                                                            <QrCode className="mr-2 h-4 w-4" />
-                                                            <span>
-                                                                Generate QR Code
-                                                            </span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem>
-                                                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                                                            <span>
-                                                                View
-                                                                Verification
-                                                                History
-                                                            </span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem>
-                                                            <span>
-                                                                Edit Item
-                                                            </span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive">
-                                                            <XCircle className="mr-2 h-4 w-4" />
-                                                            <span>
-                                                                Delete Item
-                                                            </span>
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </Card>
-
-                    {selectedItems.length > 0 && (
+                    {/*{selectedItems.length > 0 && (
                         <div className="flex items-center gap-2 justify-end">
                             <span className="text-sm text-muted-foreground">
                                 {selectedItems.length} item
@@ -449,7 +121,63 @@ export default function ProductDetail({
                                 Export Selected
                             </Button>
                         </div>
-                    )}
+                    )}*/}
+
+                    <DataTable
+                        columns={itemColumns}
+                        data={items.data}
+                        pagination={{
+                            data: items.meta,
+                            onChange: (table) => {
+                                router.get(
+                                    route("products.show", {
+                                        product: product.data.id,
+                                    }),
+                                    {
+                                        page:
+                                            table.getState().pagination
+                                                .pageIndex + 1,
+                                        per_page:
+                                            table.getState().pagination
+                                                .pageSize,
+                                    },
+                                    { only: ["products"], preserveState: true },
+                                );
+                            },
+                        }}
+                        filter={{
+                            column: "serial_number",
+                            onChange: debounce((value) => {
+                                router.get(
+                                    route("products.show", {
+                                        product: product.data.id,
+                                    }),
+                                    {
+                                        search: value,
+                                    },
+                                    { only: ["products"], preserveState: true },
+                                );
+                            }, 200),
+                        }}
+                        RightHeader={() => (
+                            <>
+                                <Button asChild variant="outline">
+                                    <Link href={route("products.bulk_upload")}>
+                                        <FileUp className="h-4 w-4" />
+                                        Bulk Upload
+                                    </Link>
+                                </Button>
+                                <Button
+                                    onClick={() =>
+                                        setDialogOpen((prev) => !prev)
+                                    }
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Product Item
+                                </Button>
+                            </>
+                        )}
+                    />
                 </TabsContent>
 
                 <TabsContent value="details" className="space-y-6 pt-4">
@@ -457,7 +185,7 @@ export default function ProductDetail({
                         <CardHeader>
                             <CardTitle>Product Information</CardTitle>
                             <CardDescription>
-                                Details about this product group
+                                Details about {product.data.name}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -467,25 +195,35 @@ export default function ProductDetail({
                                         <h3 className="text-sm font-medium text-muted-foreground">
                                             Brand
                                         </h3>
-                                        <p>{productDetails.brand}</p>
+                                        <p>{product.data.brand}</p>
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-medium text-muted-foreground">
                                             Category
                                         </h3>
-                                        <p>{productDetails.category}</p>
+                                        <p>{product.data.category.name}</p>
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-medium text-muted-foreground">
                                             Description
                                         </h3>
-                                        <p>{productDetails.description}</p>
+                                        <p>{product.data.description}</p>
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-medium text-muted-foreground">
-                                            Price
+                                            Total Items
                                         </h3>
-                                        <p>{productDetails.price}</p>
+                                        <p>
+                                            {product.data.totalItems.toString()}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-muted-foreground">
+                                            Total Claimed
+                                        </h3>
+                                        <p>
+                                            {product.data.totalClaimed.toString()}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="space-y-4">
@@ -493,42 +231,57 @@ export default function ProductDetail({
                                         <h3 className="text-sm font-medium text-muted-foreground">
                                             Material
                                         </h3>
-                                        <p>{productDetails.material}</p>
+                                        <p>{product.data.material}</p>
                                     </div>
-                                    <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">
-                                            Dimensions
-                                        </h3>
-                                        <p>{productDetails.dimensions}</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">
-                                            Available Colors
-                                        </h3>
-                                        <div className="flex flex-wrap gap-2 mt-1">
-                                            {productDetails.colors.map(
-                                                (color) => (
-                                                    <Badge
-                                                        key={color}
-                                                        variant="outline"
-                                                    >
-                                                        {color}
-                                                    </Badge>
-                                                ),
-                                            )}
+                                    {product.data.colors ? (
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground">
+                                                Available Colors
+                                            </h3>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {product.data.colors.map(
+                                                    (color) => (
+                                                        <Badge
+                                                            key={color.value}
+                                                            variant="outline"
+                                                        >
+                                                            {color.label}
+                                                        </Badge>
+                                                    ),
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">
-                                            Total Items
-                                        </h3>
-                                        <p>{productItems.length}</p>
-                                    </div>
+                                    ) : null}
+                                    {product.data.sizes ? (
+                                        <div>
+                                            <h3 className="text-sm font-medium text-muted-foreground">
+                                                Available Sizes
+                                            </h3>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {product.data.sizes.map(
+                                                    (size) => (
+                                                        <Badge
+                                                            key={size.value}
+                                                            variant="outline"
+                                                        >
+                                                            {size.label}
+                                                        </Badge>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
 
                             <div className="flex justify-end">
-                                <Button variant="outline">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setSelectedProduct(product.data);
+                                        setDialogOpen(true);
+                                    }}
+                                >
                                     Edit Product Details
                                 </Button>
                             </div>
@@ -545,15 +298,62 @@ export default function ProductDetail({
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="h-[300px] flex items-center justify-center bg-muted/20 rounded-md">
-                                <span className="text-muted-foreground">
-                                    Analytics visualization will appear here
-                                </span>
-                            </div>
+                            <ChartContainer config={chartConfig}>
+                                <AreaChart
+                                    accessibilityLayer
+                                    data={chartData}
+                                    margin={{
+                                        left: 12,
+                                        right: 12,
+                                    }}
+                                >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="month"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) =>
+                                            value.slice(0, 3)
+                                        }
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={
+                                            <ChartTooltipContent indicator="line" />
+                                        }
+                                    />
+                                    <Area
+                                        dataKey="verification"
+                                        type="natural"
+                                        fill="var(--color-verification)"
+                                        fillOpacity={0.4}
+                                        stroke="var(--color-verification)"
+                                    />
+                                </AreaChart>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="sm:max-w-[425px] overflow-y-scroll max-h-screen">
+                    <DialogHeader>
+                        <DialogTitle>Edit Product</DialogTitle>
+                        <DialogDescription>
+                            Click submit when you're done.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ProductForm
+                        onSuccess={() => {
+                            setDialogOpen(false);
+                            setSelectedProduct(null);
+                        }}
+                        product={selectedProduct || undefined}
+                    />
+                </DialogContent>
+            </Dialog>
         </Authenticated>
     );
 }

@@ -1,23 +1,4 @@
-import * as React from "react";
-import {
-    AudioWaveform,
-    BookOpen,
-    Bot,
-    Command,
-    Frame,
-    GalleryVerticalEnd,
-    Map,
-    PieChart,
-    Settings2,
-    SettingsIcon,
-    Users2,
-    Package,
-    Building,
-    LayoutDashboard,
-} from "lucide-react";
-
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
@@ -28,7 +9,17 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar";
 import { usePage } from "@inertiajs/react";
-import { NavSecondary } from "./nav-secondary";
+import {
+    AudioWaveform,
+    Building,
+    Command,
+    GalleryVerticalEnd,
+    LayoutDashboard,
+    Package,
+    Settings2,
+    Users2,
+} from "lucide-react";
+import * as React from "react";
 
 // This is sample data.
 const data = {
@@ -39,7 +30,7 @@ const data = {
     },
     teams: [
         {
-            name: "Acme Inc",
+            name: "Goods",
             logo: GalleryVerticalEnd,
             plan: "Enterprise",
         },
@@ -66,53 +57,63 @@ const data = {
             url: "products",
             icon: Package,
         },
-        {
-            title: "Users",
-            url: "users",
-            icon: Users2,
-        },
+
         {
             title: "Settings",
-            url: "dashboard",
+            url: "settings",
             icon: Settings2,
-        },
-    ],
-    navSecondary: [
-        {
-            title: "Settings",
-            url: "#",
-            icon: SettingsIcon,
-        },
-    ],
-    projects: [
-        {
-            name: "Design Engineering",
-            url: "#",
-            icon: Frame,
-        },
-        {
-            name: "Sales & Marketing",
-            url: "#",
-            icon: PieChart,
-        },
-        {
-            name: "Travel",
-            url: "#",
-            icon: Map,
         },
     ],
 };
 
+const navAdmin = [
+    {
+        title: "Dashboard",
+        url: "dashboard",
+        icon: LayoutDashboard,
+    },
+    {
+        title: "Merchants",
+        url: "merchants",
+        icon: Building,
+    },
+    {
+        title: "Products",
+        url: "products",
+        icon: Package,
+    },
+    {
+        title: "Users",
+        url: "users",
+        icon: Users2,
+    },
+    {
+        title: "Settings",
+        url: "settings",
+        icon: Settings2,
+    },
+];
+
+const adminTeam = {
+    name: "Product Verificator",
+    logo: GalleryVerticalEnd,
+    plan: "Super Admin",
+};
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const user = usePage().props.auth.user;
+
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                <TeamSwitcher teams={data.teams} />
+                <TeamSwitcher
+                    teams={user.is_admin ? [adminTeam] : data.teams}
+                    viewOnly={user.is_admin}
+                />
             </SidebarHeader>
+
             <SidebarContent>
-                <NavMain items={data.navMain} />
-                {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
+                <NavMain items={user.is_admin ? navAdmin : data.navMain} />
             </SidebarContent>
             <SidebarFooter>
                 <NavUser

@@ -4,16 +4,24 @@ namespace App\Policies;
 
 use App\Models\Product;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ProductPolicy
 {
+    public function before(User $user, $ability)
+    {
+        if ($user->is_admin) {
+            return true;
+        }
+
+        return null;
+    }
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasPermissionTo("view products");
     }
 
     /**
@@ -21,7 +29,7 @@ class ProductPolicy
      */
     public function view(User $user, Product $product): bool
     {
-        return false;
+        return $user->hasPermissionTo("view products");
     }
 
     /**
@@ -29,7 +37,7 @@ class ProductPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->hasPermissionTo("add products");
     }
 
     /**
@@ -37,7 +45,9 @@ class ProductPolicy
      */
     public function update(User $user, Product $product): bool
     {
-        return false;
+        $merchantId = session("team_id", $user->getLatestMerchant()->id);
+        return $user->hasPermissionTo("edit products") &&
+            $product->merchant->id == $merchantId;
     }
 
     /**
@@ -45,22 +55,8 @@ class ProductPolicy
      */
     public function delete(User $user, Product $product): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Product $product): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Product $product): bool
-    {
-        return false;
+        $merchantId = session("team_id", $user->getLatestMerchant()->id);
+        return $user->hasPermissionTo("delete products") &&
+            $product->merchant->id == $merchantId;
     }
 }

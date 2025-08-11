@@ -42,7 +42,10 @@ export function NavMain({
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 tooltip={item.title}
-                                isActive={route().current(item.url)}
+                                isActive={
+                                    route().current(item.url) ||
+                                    route().current(`${item.url}.*`)
+                                }
                                 asChild
                             >
                                 <a href={route(item.url)}>

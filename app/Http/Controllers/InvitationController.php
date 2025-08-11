@@ -56,7 +56,10 @@ class InvitationController extends Controller
                 "password" => Hash::make($request->password),
                 "email_verified_at" => now(),
             ]);
-            $user->merchants()->attach($invitation->merchant->id);
+            $user->merchants()->attach($invitation->merchant->id, [
+                "role" => $invitation->role,
+                "invited_by" => $invitation->user_id,
+            ]);
 
             event(new Registered($user));
             Auth::login($user);

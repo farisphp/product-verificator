@@ -25,6 +25,10 @@ return new class extends Migration {
             $table->id();
             $table->string("name");
             $table->string("brand");
+            $table->string("material")->nullable();
+            $table->text("description")->nullable();
+            $table->json("colors")->nullable();
+            $table->json("sizes")->nullable();
             $table
                 ->foreignId("category_id")
                 ->nullable()
@@ -46,16 +50,11 @@ return new class extends Migration {
                 ->constrained()
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-            $table->string("unique_id");
+            $table->string("serial_number");
             $table->timestamp("manufacture_date");
-
-            $table->string("description")->nullable();
             $table->string("sku")->nullable();
-            $table->string("material")->nullable();
             $table->string("color")->nullable();
-            $table->string("weight")->nullable();
             $table->string("size")->nullable();
-            $table->string("dimensions")->nullable();
             $table->timestamps();
         });
     }

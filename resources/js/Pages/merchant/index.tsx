@@ -13,6 +13,7 @@ import { useState } from "react";
 import { columns } from "./partials/columns";
 import { MerchantForm } from "./partials/merchant-form";
 import { Merchant as MerchantData, PageProps, PaginatedData } from "@/types";
+import { debounce } from "lodash";
 
 export default function Merchant() {
     const { merchants } = usePage<
@@ -20,7 +21,6 @@ export default function Merchant() {
             merchants: PaginatedData<MerchantData>;
         }>
     >().props;
-
     const [dialogOpen, setDialogOpen] = useState(false);
 
     return (
@@ -43,7 +43,18 @@ export default function Merchant() {
                         );
                     },
                 }}
-                filter={{ column: "name" }}
+                filter={{
+                    column: "name",
+                    onChange: debounce((value: string) => {
+                        router.get(
+                            route("merchants"),
+                            {
+                                search: value,
+                            },
+                            { only: ["merchants"], preserveState: true },
+                        );
+                    }, 200),
+                }}
                 RightHeader={() => (
                     <Button onClick={() => setDialogOpen((prev) => !prev)}>
                         Add Merchant

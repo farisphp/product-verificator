@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Merchant extends Model
@@ -26,9 +27,16 @@ class Merchant extends Model
         "website",
     ];
 
-    public function users(): HasMany
+    public function users(): BelongsToMany
     {
-        return $this->hasMany(User::class);
+        return $this->belongsToMany(User::class)
+            ->withTimestamps()
+            ->withPivot("invited_by", "role");
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 
     #[Scope]
@@ -36,7 +44,7 @@ class Merchant extends Model
     {
         $query->when($filters["search"] ?? null, function (
             Builder $query,
-            $search
+            $search,
         ) {
             $query
                 ->where("name", "like", "%" . $search . "%")

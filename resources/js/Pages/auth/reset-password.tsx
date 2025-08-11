@@ -50,7 +50,6 @@ export default function ResetPassword({
     });
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values);
         router.post(route("password.store"), values, {
             onStart: () => {
                 setSubmitting(true);

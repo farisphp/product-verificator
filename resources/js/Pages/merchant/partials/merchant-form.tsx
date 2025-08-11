@@ -74,7 +74,10 @@ export function MerchantForm({ onSuccess }: { onSuccess: () => void }) {
                         <FormItem>
                             <FormLabel>Name</FormLabel>
                             <FormControl>
-                                <Input placeholder="shadcn" {...field} />
+                                <Input
+                                    placeholder="Enter merchant name"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

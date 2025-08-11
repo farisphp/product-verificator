@@ -1,92 +1,90 @@
-import AuthenticatedLayout from "@/layouts/authenticated";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import { FileUp, Plus } from "lucide-react";
+import { debounce } from "lodash";
 
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import { Product as ProductProps } from "@/types";
+import AuthenticatedLayout from "@/layouts/authenticated";
+import { PaginatedData, Product as ProductProps } from "@/types";
 import { columns } from "./partials/columns";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { ProductForm } from "./partials/product-form";
+import { useState } from "react";
 
-// Mock data for demonstration - grouped by product name
-const productGroups: ProductProps[] = [
-    {
-        id: 1,
-        name: "Premium Leather Wallet",
-        brand: "LuxLeather",
-        category: "Accessories",
-        totalItems: 120,
-        verifications: 42,
-    },
-    {
-        id: 1,
-        name: "Designer Sunglasses",
-        brand: "OptiVision",
-        category: "Eyewear",
-        totalItems: 85,
-        verifications: 28,
-    },
-    {
-        id: 1,
-        name: "Luxury Watch",
-        brand: "TimeKeeper",
-        category: "Watches",
-        totalItems: 50,
-        verifications: 15,
-    },
-    {
-        id: 1,
-        name: "Designer Handbag",
-        brand: "FashionElite",
-        category: "Bags",
-        totalItems: 75,
-        verifications: 37,
-    },
-    {
-        id: 1,
-        name: "Premium Sneakers",
-        brand: "UrbanStep",
-        category: "Footwear",
-        totalItems: 200,
-        verifications: 23,
-    },
-];
+export default function Product({
+    products,
+}: {
+    products: PaginatedData<ProductProps>;
+}) {
+    const [dialogOpen, setDialogOpen] = useState(false);
 
-export default function Product() {
     return (
         <AuthenticatedLayout>
             <Head title="Products" />
             <DataTable
                 columns={columns}
-                data={productGroups}
+                data={products.data}
                 pagination={{
-                    data: {},
+                    data: products.meta,
                     onChange: (table) => {
-                        // router.get(
-                        //     route("merchants"),
-                        //     {
-                        //         page: table.getState().pagination.pageIndex + 1,
-                        //         per_page: table.getState().pagination.pageSize,
-                        //     },
-                        //     { only: ["merchants"], preserveState: true },
-                        // );
+                        router.get(
+                            route("products"),
+                            {
+                                page: table.getState().pagination.pageIndex + 1,
+                                per_page: table.getState().pagination.pageSize,
+                            },
+                            { only: ["products"], preserveState: true },
+                        );
                     },
                 }}
-                filter={{ column: "name" }}
+                filter={{
+                    column: "name",
+                    onChange: debounce((value) => {
+                        router.get(
+                            route("products"),
+                            {
+                                search: value,
+                            },
+                            { only: ["products"], preserveState: true },
+                        );
+                    }, 200),
+                }}
                 RightHeader={() => (
                     <>
                         <Button asChild variant="outline">
-                            <Link href="/admin/products/bulk-upload">
+                            <Link href={route("products.bulk_upload")}>
                                 <FileUp className="mr-2 h-4 w-4" />
                                 Bulk Upload
                             </Link>
                         </Button>
-                        <Button>
+                        <Button onClick={() => setDialogOpen((prev) => !prev)}>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Product
                         </Button>
                     </>
                 )}
             />
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogContent className="sm:max-w-[425px] overflow-y-scroll max-h-screen">
+                    <DialogHeader>
+                        <DialogTitle>Add Product</DialogTitle>
+                        <DialogDescription>
+                            Click submit when you're done.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ProductForm
+                        onSuccess={() => {
+                            setDialogOpen(false);
+                        }}
+                    />
+                </DialogContent>
+            </Dialog>
         </AuthenticatedLayout>
     );
 }
