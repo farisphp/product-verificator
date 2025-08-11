@@ -6,6 +6,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MerchantController;
 use App\Http\Controllers\ProductChecker;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductItemController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Models\Verification;
@@ -38,10 +39,6 @@ Route::middleware(["auth", "verified"])->group(function () {
         ProductController::class,
         "update",
     ])->name("products.update");
-    Route::get("/products/{product}/items", [
-        ProductController::class,
-        "itemStore",
-    ])->name("products.items.store");
     Route::get("/products/bulk-upload", [
         ProductController::class,
         "bulkUpload",
@@ -50,6 +47,11 @@ Route::middleware(["auth", "verified"])->group(function () {
         ProductController::class,
         "bulkTemplate",
     ])->name("products.bulk_upload.template");
+
+    Route::post("/products/{product}/items", [
+        ProductItemController::class,
+        "store",
+    ])->name("products.items.store");
 
     Route::get("/settings", [SettingsController::class, "index"])->name(
         "settings",

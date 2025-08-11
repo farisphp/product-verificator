@@ -11,6 +11,7 @@ import {
 import { Product, ProductItem } from "@/types";
 import { Link } from "@inertiajs/react";
 import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import { CheckCircle2, MoreHorizontal, QrCode, XCircle } from "lucide-react";
 
 export const columns: ColumnDef<Product>[] = [
@@ -87,8 +88,7 @@ export const itemColumns: ColumnDef<ProductItem>[] = [
         header: "Manufacture Date",
         cell: ({ row }) => {
             const product = row.original;
-            return product.manufacture_date;
-            // return <Badge variant="outline">{product.category.name}</Badge>;
+            return format(new Date(product.manufacture_date), "PPP");
         },
     },
     {

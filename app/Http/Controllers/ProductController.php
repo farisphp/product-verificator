@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreProductItemRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\MerchantCollection;
@@ -12,7 +11,6 @@ use App\Models\Product;
 use App\Http\Resources\ProductResource;
 use App\Models\Merchant;
 use App\Models\ProductCategory;
-use App\Models\ProductItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -191,26 +189,5 @@ class ProductController extends Controller
         return redirect()
             ->back()
             ->with("success", "Product deleted successfully.");
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function itemStore(
-        StoreProductItemRequest $request,
-        Product $product,
-    ) {
-        $productItem = ProductItem::create([
-            "product_id" => $product->id,
-            "serial_number" => $request->serial_number,
-            "manufacture_date" => $request->manufacture_date,
-            "sku" => $request->sku,
-            "color" => $request->color,
-            "size" => $request->size,
-        ]);
-
-        return redirect()
-            ->back()
-            ->with("success", "Product created successfully.");
     }
 }

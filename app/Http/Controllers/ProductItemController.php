@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductItemRequest;
 use App\Http\Requests\UpdateProductItemRequest;
+use App\Models\Product;
 use App\Models\ProductItem;
 
 class ProductItemController extends Controller
@@ -27,9 +28,20 @@ class ProductItemController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProductItemRequest $request)
+    public function store(StoreProductItemRequest $request, Product $product)
     {
-        //
+        $productItem = ProductItem::create([
+            "product_id" => $product->id,
+            "serial_number" => $request->serial_number,
+            "manufacture_date" => $request->manufacture_date,
+            "sku" => $request->sku,
+            "color" => $request->color,
+            "size" => $request->size,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with("success", "Product created successfully.");
     }
 
     /**
@@ -51,8 +63,10 @@ class ProductItemController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProductItemRequest $request, ProductItem $productItem)
-    {
+    public function update(
+        UpdateProductItemRequest $request,
+        ProductItem $productItem,
+    ) {
         //
     }
 

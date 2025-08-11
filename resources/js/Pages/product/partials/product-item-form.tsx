@@ -17,252 +17,175 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Category, Merchant, PageProps, Product } from "@/types";
+import { Category, Merchant, PageProps, Product, ProductItem } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router, usePage } from "@inertiajs/react";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { debounce } from "lodash";
-import { PlusIcon } from "lucide-react";
+import { CalendarIcon, PlusIcon } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
-    name: z.string().min(2).max(50),
-    brand: z.string().min(2).max(50),
-    category: z.string().min(1).max(50),
-    material: z.string().nullable(),
-    description: z.string().nullable(),
-    colors: z
-        .array(z.object({ label: z.string().min(1, "Color cannot be empty") }))
-        .nullable(),
-    sizes: z
-        .array(z.object({ label: z.string().min(1, "Size cannot be empty") }))
-        .nullable(),
+    serial_number: z
+        .string()
+        .min(2, "Serial number must be at least 2 characters"),
+    manufacture_date: z.date({
+        required_error: "A manufacture date is required.",
+    }),
+    sku: z.string().min(1, "SKU cannot be empty"),
+    color: z.string().min(1, "Please select the color").optional(),
+    size: z.string().min(1, "Please select the size").optional(),
 });
 
 export function ProductItemForm({
     onSuccess,
-    product,
+    item,
 }: {
     onSuccess: () => void;
-    product?: Product;
+    item?: ProductItem;
 }) {
-    const { categories, merchants, auth } = usePage<
+    const {
+        product: { data: product },
+    } = usePage<
         PageProps<{
-            categories: { data: Category[] };
-            merchants: { data: Merchant[] };
+            product: { data: Product };
         }>
     >().props;
-    let params = new URLSearchParams(window.location.search);
 
-    let schema = auth.user.is_admin ? adminSchema : formSchema;
-    const form = useForm<z.infer<typeof schema>>({
-        resolver: zodResolver(schema),
-        defaultValues: product
-            ? {
-                  ...product,
-                  category: product.category.id.toString(),
-                  // @ts-ignore
-                  merchantId: product.merchant_id.toString(),
-              }
-            : {
-                  name: "",
-                  brand: "",
-                  colors: [],
-                  sizes: [],
-              },
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: undefined,
     });
 
-    const category = form.watch("category");
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        const method = "post";
+        const routeName = "products.items.store";
+        const routeParams = { product: product.id };
 
-    const {
-        fields: colorFields,
-        append: appendColor,
-        remove: removeColor,
-    } = useFieldArray({
-        control: form.control,
-        name: "colors",
-    });
-
-    const {
-        fields: sizeFields,
-        append: appendSize,
-        remove: removeSize,
-    } = useFieldArray({
-        control: form.control,
-        name: "sizes",
-    });
-
-    function onSubmit(values: z.infer<typeof schema>) {
-        const method = product ? "put" : "post";
-        const routeName = product ? "products.update" : "products.store";
-        const routeParams = product ? { product: product.id } : {};
-
-        router[method](
-            route(routeName, routeParams),
-            // @ts-ignore
-            { ...values, merchant_id: values?.merchantId },
-            {
-                onSuccess: () => {
-                    onSuccess?.();
-                },
+        router[method](route(routeName, routeParams), values, {
+            onSuccess: () => {
+                onSuccess();
             },
-        );
-    }
-
-    function searchCategory(value: string) {
-        const routeName = product ? "products.show" : "products";
-        const routeParams = product ? { product: product.id } : {};
-        router.get(
-            route(routeName, routeParams),
-            {
-                search: params.get("search"),
-                searchCategory: value,
-            },
-            { only: ["categories"], preserveState: true },
-        );
-    }
-
-    function searchMerchant(value: string) {
-        const routeName = product ? "products" : "products.show";
-        const routeParams = product ? { product: product.id } : {};
-        router.get(
-            route(routeName, routeParams),
-            {
-                search: params.get("search"),
-                searchCategory: params.get("searchCategory"),
-                searchMerchant: value,
-            },
-            { only: ["merchants"], preserveState: true },
-        );
+        });
     }
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {auth.user.is_admin ? (
-                    <FormField
-                        control={form.control}
-                        // @ts-ignore
-                        name="merchantId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Merchant</FormLabel>
-                                <Select
-                                    onValueChange={field.onChange}
-                                    defaultValue={
-                                        field.value as string | undefined
-                                    }
-                                >
+                <FormField
+                    control={form.control}
+                    name="serial_number"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Serial Number</FormLabel>
+                            <FormControl>
+                                <Input
+                                    placeholder="Enter serial number"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="sku"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>SKU </FormLabel>
+                            <FormControl>
+                                <Input placeholder="Enter SKU" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="manufacture_date"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Manufacture Date</FormLabel>
+                            {/*<FormControl>
+                                <Input
+                                    {...field}
+                                    type="date"
+                                    placeholder="Enter SKU"
+                                    value={field.value?.toString() || ""}
+                                />
+                            </FormControl>*/}
+                            <Popover modal>
+                                <PopoverTrigger asChild>
                                     <FormControl>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select merchant" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <Input
-                                            placeholder="Search merchant"
-                                            className="mb-2 mt-0.5"
-                                            defaultValue={
-                                                params.get("searchMerchant") ||
-                                                ""
-                                            }
-                                            onChange={debounce(
-                                                (input) =>
-                                                    searchMerchant(
-                                                        input.target.value,
-                                                    ),
-                                                150,
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "pl-3 text-left font-normal",
+                                                !field.value &&
+                                                    "text-muted-foreground",
                                             )}
-                                        />
-                                        {merchants.data.map((merchant) => (
-                                            <SelectItem
-                                                value={merchant.id.toString()}
-                                                key={`cat-${merchant.id}`}
-                                            >
-                                                {merchant.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                ) : null}
-
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Name</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Product name" {...field} />
-                            </FormControl>
+                                        >
+                                            {field.value ? (
+                                                format(field.value, "PPP")
+                                            ) : (
+                                                <span>Pick a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto p-0"
+                                    align="start"
+                                    // portal={false}
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) =>
+                                            date > new Date() ||
+                                            date < new Date("1900-01-01")
+                                        }
+                                        captionLayout="dropdown"
+                                    />
+                                </PopoverContent>
+                            </Popover>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
-                    name="brand"
+                    name="color"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Brand</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Brand name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Category</FormLabel>
+                            <FormLabel>Color</FormLabel>
                             <Select
                                 onValueChange={field.onChange}
                                 value={field.value}
                             >
                                 <FormControl>
                                     <SelectTrigger className="w-full">
-                                        <SelectValue />
+                                        <SelectValue placeholder="Select color" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <Input
-                                        placeholder="Search or create category"
-                                        className="mb-2 mt-0.5"
-                                        defaultValue={
-                                            params.get("searchCategory") || ""
-                                        }
-                                        onChange={debounce(
-                                            (input) =>
-                                                searchCategory(
-                                                    input.target.value,
-                                                ),
-                                            150,
-                                        )}
-                                    />
-                                    {categories.data.length === 0 &&
-                                    params.get("searchCategory") ? (
+                                    {product?.colors?.map((color) => (
                                         <SelectItem
-                                            value={
-                                                params.get("searchCategory")!
-                                            }
-                                            key={`cat-${params.get("searchCategory")}`}
+                                            value={color.value.toString()}
+                                            key={`color-${color.value}`}
                                         >
-                                            {params.get("searchCategory")}
-                                        </SelectItem>
-                                    ) : null}
-                                    {categories.data.map((cat) => (
-                                        <SelectItem
-                                            value={cat.id.toString()}
-                                            key={`cat-${cat.id}`}
-                                        >
-                                            {cat.name}
+                                            {color.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -271,120 +194,36 @@ export function ProductItemForm({
                         </FormItem>
                     )}
                 />
-
                 <FormField
                     control={form.control}
-                    name="material"
+                    name="size"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Material</FormLabel>
-                            <FormControl>
-                                <Input
-                                    {...field}
-                                    placeholder="Product's material"
-                                    value={field.value || ""}
-                                />
-                            </FormControl>
+                            <FormLabel>Size</FormLabel>
+                            <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select size" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {product?.sizes?.map((size) => (
+                                        <SelectItem
+                                            value={size.value.toString()}
+                                            key={`size-${size.value}`}
+                                        >
+                                            {size.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                                <Textarea
-                                    {...field}
-                                    placeholder="Product's description"
-                                    value={field.value || ""}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                {/* Dynamic Colors Field */}
-                <div className="space-y-2">
-                    <FormLabel>Available Colors</FormLabel>
-                    {colorFields.map((field, index) => (
-                        <div key={field.id} className="flex space-x-2">
-                            <FormField
-                                control={form.control}
-                                name={`colors.${index}`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-1">
-                                        <FormControl>
-                                            <Input
-                                                placeholder="Enter color"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="border-destructive text-destructive"
-                                onClick={() => removeColor(index)}
-                            >
-                                Remove
-                            </Button>
-                        </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => appendColor("")}
-                    >
-                        <PlusIcon /> Add Color
-                    </Button>
-                </div>
-
-                {/* Dynamic Sizes Field */}
-                <div className="space-y-2">
-                    <FormLabel>Available Sizes</FormLabel>
-                    {sizeFields.map((field, index) => (
-                        <div key={field.id} className="flex space-x-2">
-                            <FormField
-                                control={form.control}
-                                name={`sizes.${index}`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-1">
-                                        <FormControl>
-                                            <Input
-                                                placeholder="Enter size"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="border-destructive text-destructive"
-                                onClick={() => removeSize(index)}
-                            >
-                                Remove
-                            </Button>
-                        </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => appendSize("")}
-                    >
-                        <PlusIcon /> Add Size
-                    </Button>
-                </div>
 
                 <DialogFooter>
                     <Button

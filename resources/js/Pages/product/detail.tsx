@@ -30,9 +30,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { PaginatedData, Product } from "@/types";
+import { PaginatedData, Product, ProductItem } from "@/types";
 import { itemColumns } from "./partials/columns";
 import { ProductForm } from "./partials/product-form";
+import { ProductItemForm } from "./partials/product-item-form";
 
 const chartData = [
     { month: "January", verification: 10 },
@@ -55,10 +56,11 @@ export default function ProductDetail({
     items,
 }: {
     product: { data: Product };
-    items: PaginatedData<any>;
+    items: PaginatedData<ProductItem>;
 }) {
     const [activeTab, setActiveTab] = useState("items");
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [itemDialogOpen, setItemDialogOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(
         null,
     );
@@ -169,7 +171,7 @@ export default function ProductDetail({
                                 </Button>
                                 <Button
                                     onClick={() =>
-                                        setDialogOpen((prev) => !prev)
+                                        setItemDialogOpen((prev) => !prev)
                                     }
                                 >
                                     <Plus className="h-4 w-4" />
@@ -351,6 +353,22 @@ export default function ProductDetail({
                             setSelectedProduct(null);
                         }}
                         product={selectedProduct || undefined}
+                    />
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>
+                <DialogContent className="sm:max-w-[425px] overflow-y-scroll max-h-screen">
+                    <DialogHeader>
+                        <DialogTitle>Add Product Item</DialogTitle>
+                        <DialogDescription>
+                            Click submit when you're done.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ProductItemForm
+                        onSuccess={() => {
+                            setItemDialogOpen(false);
+                        }}
                     />
                 </DialogContent>
             </Dialog>
